@@ -31,7 +31,7 @@ const Index = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="bg-neuro-dark text-white py-4 px-6 shadow-lg safe-area-inset-top">
-        <h1 className="text-xl font-bold">NeuroAware</h1>
+        <h1 className="text-xl font-bold">ChompCheck</h1>
       </header>
       
       <main className="flex-1 flex flex-col overflow-hidden">
