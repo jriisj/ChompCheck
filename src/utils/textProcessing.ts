@@ -1,10 +1,11 @@
 
 import { Ingredient, BlacklistedIngredients } from "@/data/blacklistedIngredients";
 
-interface FoundIngredient {
+export interface FoundIngredient {
   ingredient: Ingredient;
   category: string;
 }
+
 
 // Process detected text and find blacklisted ingredients
 export const findBlacklistedIngredients = (

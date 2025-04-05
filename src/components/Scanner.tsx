@@ -1,7 +1,6 @@
-
 import React, { useRef, useState, useEffect } from "react";
-import { Camera, RefreshCcw } from "lucide-react";
-import { findBlacklistedIngredients } from "@/utils/textProcessing";
+import Tesseract from "tesseract.js";
+import { findBlacklistedIngredients, FoundIngredient } from "@/utils/textProcessing";
 import { BlacklistedIngredients } from "@/data/blacklistedIngredients";
 import { ResultOverlay } from "./ResultOverlay";
 import { toast } from "sonner";
@@ -10,56 +9,39 @@ interface ScannerProps {
   blacklist: BlacklistedIngredients;
 }
 
+export interface LocalFoundIngredient {
+  ingredient: { ingredient_id: string; ingredient_name: string; [key: string]: string | number | boolean }; // Ensure required fields are included
+  category: string;
+}
+
 export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const [scanning, setScanning] = useState(false);
   const [detectedText, setDetectedText] = useState<string>("");
+  const [foundIngredients, setFoundIngredients] = useState<LocalFoundIngredient[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [foundIngredients, setFoundIngredients] = useState<any[]>([]);
   const [permissionDenied, setPermissionDenied] = useState(false);
 
-  // Start the camera with proper permission handling
+  // Start the camera
   const startCamera = async () => {
     try {
       setPermissionDenied(false);
-      
       const constraints = {
-        video: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+        video: { facingMode: "environment" },
       };
-      
-      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(e => {
-            console.error("Error playing video:", e);
-            toast.error("Failed to start video stream");
-          });
-        };
+        videoRef.current.play();
         setScanning(true);
-        console.log("Camera started successfully");
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Error accessing camera:", err);
-      
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-        setPermissionDenied(true);
-        toast.error("Camera permission denied. Please grant camera access to use the scanner.");
-      } else if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
-        toast.error("No suitable camera found. Please ensure your device has a camera.");
-      } else if (err.name === "NotReadableError" || err.name === "AbortError") {
-        toast.error("Camera is already in use or not available.");
-      } else {
-        toast.error("Could not access the camera. Please try again.");
-      }
+      setPermissionDenied(true);
+      toast.error("Camera access denied. Please enable camera permissions.");
     }
   };
 
@@ -67,10 +49,9 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
   const stopCamera = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
+      tracks.forEach((track) => track.stop());
       videoRef.current.srcObject = null;
       setScanning(false);
-      console.log("Camera stopped");
     }
   };
 
@@ -79,33 +60,41 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
+      const context = canvas.getContext("2d");
+
       if (context) {
-        // Set canvas dimensions to match video
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        
-        // Draw the current video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
         setIsAnalyzing(true);
-        
-        // In a real app, here we would process the image with OCR
-        // For this demo, we'll simulate OCR with a timeout and sample text
-        setTimeout(() => {
-          // This is where you would integrate with a real OCR API
-          const simulatedText = "Ingredients: Water, Sugar, Modified Corn Starch, E104 Quinoline Yellow, Salt, E211 Sodium Benzoate, Natural Flavors, E955";
-          processDetectedText(simulatedText);
-        }, 2000);
+        processImage(canvas);
       }
     }
   };
 
-  // Process the text detected by OCR
+  // Process the captured image with OCR
+  const processImage = async (image: HTMLCanvasElement) => {
+    try {
+      const { data: { text } } = await Tesseract.recognize(image, "eng");
+      processDetectedText(text);
+    } catch (err) {
+      console.error("Error during OCR processing:", err);
+      toast.error("Failed to analyze the image. Please try again.");
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Analyze the detected text for blacklisted ingredients
   const processDetectedText = (text: string) => {
     setDetectedText(text);
-    const found = findBlacklistedIngredients(text, blacklist);
+    const found = findBlacklistedIngredients(text, blacklist).map((item) => ({
+      ingredient: {
+        ingredient_id: "id" in item.ingredient ? item.ingredient.id : "Unknown", // Ensure 'ingredient_id' is provided
+        ingredient_name: "name" in item.ingredient ? item.ingredient.name : "Unknown", // Ensure 'ingredient_name' is provided
+        description: "Description not available",
+      },
+      category: item.category,
+    })) as LocalFoundIngredient[];
     setFoundIngredients(found);
     setIsAnalyzing(false);
     setShowResults(true);
@@ -129,78 +118,47 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
     <div className="w-full h-full flex flex-col">
       <div className="camera-container flex-grow">
         {!scanning ? (
-          <div className="flex flex-col items-center justify-center h-full bg-neuro-dark/5">
-            <Camera size={48} className="text-neuro-dark/50 mb-4" />
-            <button 
-              className="button-primary"
-              onClick={startCamera}
-            >
+          <div className="flex flex-col items-center justify-center h-full bg-gray-100">
+            <button className="button-primary" onClick={startCamera}>
               Start Camera
             </button>
-            
             {permissionDenied && (
-              <div className="mt-4 text-center text-red-500 px-4">
-                <p className="font-medium">Camera permission denied</p>
-                <p className="text-sm mt-1">Please enable camera access in your browser or device settings.</p>
-              </div>
+              <p className="text-red-500 mt-4">
+                Camera permission denied. Please enable camera access.
+              </p>
             )}
           </div>
         ) : (
           <>
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline
-              className="w-full h-full object-cover"
-            />
+            <video ref={videoRef} className="w-full h-full object-cover" />
             <canvas ref={canvasRef} className="hidden" />
-            
-            {/* Capture button */}
             {!isAnalyzing && !showResults && (
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center">
-                <button 
-                  className="button-primary rounded-full h-16 w-16 flex items-center justify-center"
-                  onClick={captureImage}
-                >
-                  <Camera size={24} />
-                </button>
-              </div>
+              <button
+                className="button-primary absolute bottom-6 left-1/2 transform -translate-x-1/2"
+                onClick={captureImage}
+              >
+                Capture Image
+              </button>
             )}
-            
-            {/* Loading indicator */}
             {isAnalyzing && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <div className="text-white text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent mx-auto mb-4"></div>
-                  <p>Analyzing ingredients...</p>
-                </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <p className="text-white">Analyzing...</p>
               </div>
             )}
-            
-            {/* Results overlay */}
             {showResults && (
-              <ResultOverlay 
+              <ResultOverlay
                 detectedText={detectedText}
                 foundIngredients={foundIngredients}
-                onReset={() => {
-                  resetScanner();
-                }}
+                onReset={resetScanner}
               />
             )}
           </>
         )}
       </div>
-      
-      {scanning && !showResults && !isAnalyzing && (
-        <div className="p-4 bg-white shadow-md">
-          <button 
-            className="button-secondary w-full flex items-center justify-center gap-2"
-            onClick={stopCamera}
-          >
-            <RefreshCcw size={18} />
-            Stop Camera
-          </button>
-        </div>
+      {scanning && (
+        <button className="button-secondary mt-4" onClick={stopCamera}>
+          Stop Camera
+        </button>
       )}
     </div>
   );

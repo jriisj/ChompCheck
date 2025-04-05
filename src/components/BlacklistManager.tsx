@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,10 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
   const [selectedCategoryIndex, setSelectedCategoryIndex] = useState<number>(-1);
   const [selectedIngredientIndex, setSelectedIngredientIndex] = useState<number>(-1);
   
+  useEffect(() => {
+    localStorage.setItem("neuroAwareBlacklist", JSON.stringify(blacklist));
+  }, [blacklist]);
+
   const openDialog = (
     type: DialogType, 
     categoryIndex: number = -1, 
