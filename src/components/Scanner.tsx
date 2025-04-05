@@ -120,7 +120,7 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
         {!scanning ? (
           <div className="flex flex-col items-center justify-center h-full bg-gray-100">
             <button className="button-primary" onClick={startCamera}>
-              Start Camera
+              Take a picture why don't you?
             </button>
             {permissionDenied && (
               <p className="text-red-500 mt-4">
