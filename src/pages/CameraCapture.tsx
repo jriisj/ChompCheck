@@ -5,11 +5,16 @@ const CameraCapture = () => {
   const canvasRef = useRef(null);
   const [photo, setPhoto] = useState(null);
   const [error, setError] = useState(null);
+  const [facingMode, setFacingMode] = useState("user"); // "user" for front, "environment" for back
 
   useEffect(() => {
+    let stream;
+
     const getCameraStream = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode },
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -20,7 +25,14 @@ const CameraCapture = () => {
     };
 
     getCameraStream();
-  }, []);
+
+    // Cleanup function to stop the stream when the component unmounts or facingMode changes
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [facingMode]);
 
   const capturePhoto = () => {
     const video = videoRef.current;
@@ -36,6 +48,11 @@ const CameraCapture = () => {
     }
   };
 
+  const toggleCamera = () => {
+    // Toggle between front and back camera
+    setFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
+  };
+
   return (
     <div className="p-4 space-y-4">
       {error && <p className="text-red-500">{error}</p>}
@@ -45,12 +62,18 @@ const CameraCapture = () => {
         playsInline
         className="rounded-xl shadow-md w-full max-w-md"
       />
-      <div>
+      <div className="space-x-4">
         <button
           onClick={capturePhoto}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Capture Photo
+        </button>
+        <button
+          onClick={toggleCamera}
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+        >
+          Toggle Camera
         </button>
       </div>
       <canvas ref={canvasRef} className="hidden" />
