@@ -6,6 +6,7 @@ import { Scanner } from "@/components/Scanner";
 import { BlacklistManager } from "@/components/BlacklistManager";
 import defaultBlacklist, { BlacklistedIngredients } from "@/data/blacklistedIngredients";
 import { Toaster } from "sonner";
+import CameraCapture from "./CameraCapture";
 
 const Index = () => {
   const [blacklist, setBlacklist] = useState<BlacklistedIngredients>(defaultBlacklist);
