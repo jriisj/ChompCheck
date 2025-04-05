@@ -4,6 +4,8 @@ import { findBlacklistedIngredients, FoundIngredient } from "@/utils/textProcess
 import { BlacklistedIngredients } from "@/data/blacklistedIngredients";
 import { ResultOverlay } from "./ResultOverlay";
 import { toast } from "sonner";
+import CameraCapture from "../pages/CameraCapture";
+
 
 interface ScannerProps {
   blacklist: BlacklistedIngredients;
@@ -119,6 +121,7 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
       <div className="camera-container flex-grow">
         {!scanning ? (
           <div className="flex flex-col items-center justify-center h-full bg-gray-100">
+            <CameraCapture /> ///TODO: Hook function into processing of the resulting image 
             <button className="button-primary" onClick={startCamera}>
               Take a picture why don't you?
             </button>
