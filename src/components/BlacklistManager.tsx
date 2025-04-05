@@ -1,9 +1,8 @@
-
 import React, { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { BlacklistedIngredients, BlacklistedCategory, Ingredient } from "@/data/blacklistedIngredients";
 import { IngredientsList } from "./IngredientsList";
 
@@ -27,7 +26,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
   const [ingredientId, setIngredientId] = useState<string>("");
   const [ingredientName, setIngredientName] = useState<string>("");
   
-  // Open dialogs
   const openDialog = (
     type: DialogType, 
     categoryIndex: number = -1, 
@@ -37,7 +35,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
     setSelectedCategoryIndex(categoryIndex);
     setSelectedIngredientIndex(ingredientIndex);
     
-    // Pre-fill fields for editing
     if (type === "editCategory" && categoryIndex >= 0) {
       setCategoryName(blacklist.categories[categoryIndex].name);
     } else if (type === "editIngredient" && categoryIndex >= 0 && ingredientIndex >= 0) {
@@ -45,7 +42,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
       setIngredientId(ingredient.ingredient_id);
       setIngredientName(ingredient.ingredient_name);
     } else {
-      // Clear fields for adding
       setCategoryName("");
       setIngredientId("");
       setIngredientName("");
@@ -59,7 +55,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
     setDialogType(null);
   };
   
-  // Handle category operations
   const handleAddCategory = () => {
     if (!categoryName.trim()) {
       toast.error("Category name cannot be empty");
@@ -101,7 +96,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
     }
   };
   
-  // Handle ingredient operations
   const handleAddIngredient = () => {
     if (!ingredientId.trim() || !ingredientName.trim()) {
       toast.error("Both ID and name are required");
@@ -162,7 +156,6 @@ export const BlacklistManager: React.FC<BlacklistManagerProps> = ({
         onDeleteIngredient={handleDeleteIngredient}
       />
       
-      {/* Dialogs for adding/editing */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
