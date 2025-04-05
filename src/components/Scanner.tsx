@@ -4,6 +4,7 @@ import { Camera, RefreshCcw } from "lucide-react";
 import { findBlacklistedIngredients } from "@/utils/textProcessing";
 import { BlacklistedIngredients } from "@/data/blacklistedIngredients";
 import { ResultOverlay } from "./ResultOverlay";
+import { toast } from "sonner";
 
 interface ScannerProps {
   blacklist: BlacklistedIngredients;
@@ -17,10 +18,13 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [foundIngredients, setFoundIngredients] = useState<any[]>([]);
+  const [permissionDenied, setPermissionDenied] = useState(false);
 
-  // Start the camera
+  // Start the camera with proper permission handling
   const startCamera = async () => {
     try {
+      setPermissionDenied(false);
+      
       const constraints = {
         video: {
           facingMode: "environment",
@@ -29,14 +33,33 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
         }
       };
       
+      console.log("Requesting camera access...");
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      
       if (videoRef.current) {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
         videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play().catch(e => {
+            console.error("Error playing video:", e);
+            toast.error("Failed to start video stream");
+          });
+        };
         setScanning(true);
+        console.log("Camera started successfully");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error accessing camera:", err);
-      alert("Could not access the camera. Please ensure you have given camera permissions.");
+      
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        setPermissionDenied(true);
+        toast.error("Camera permission denied. Please grant camera access to use the scanner.");
+      } else if (err.name === "NotFoundError" || err.name === "OverconstrainedError") {
+        toast.error("No suitable camera found. Please ensure your device has a camera.");
+      } else if (err.name === "NotReadableError" || err.name === "AbortError") {
+        toast.error("Camera is already in use or not available.");
+      } else {
+        toast.error("Could not access the camera. Please try again.");
+      }
     }
   };
 
@@ -47,6 +70,7 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
       setScanning(false);
+      console.log("Camera stopped");
     }
   };
 
@@ -113,6 +137,13 @@ export const Scanner: React.FC<ScannerProps> = ({ blacklist }) => {
             >
               Start Camera
             </button>
+            
+            {permissionDenied && (
+              <div className="mt-4 text-center text-red-500 px-4">
+                <p className="font-medium">Camera permission denied</p>
+                <p className="text-sm mt-1">Please enable camera access in your browser or device settings.</p>
+              </div>
+            )}
           </div>
         ) : (
           <>
