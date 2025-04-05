@@ -38,6 +38,14 @@
 
   body {
     @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+    overscroll-behavior: none; /* Prevent overscroll bounce effects */
+  }
+  
+  /* iOS-specific button appearance */
+  button, 
+  [role="button"] {
+    -webkit-touch-callout: none;
   }
 }
 
@@ -61,6 +69,12 @@
   .highlight-found {
     @apply bg-neuro-red/20 border-l-4 border-neuro-red pl-2 py-1 rounded;
   }
+  
+  /* Mobile-friendly tab styles */
+  .mobile-tab {
+    @apply py-3 flex-1 flex items-center justify-center;
+    min-height: 48px; /* Ensure tap targets are at least 44-48px */
+  }
 }
 
 html, body, #root {
@@ -70,3 +84,26 @@ html, body, #root {
   padding: 0;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Safari-specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .h-screen, .h-full {
+    height: -webkit-fill-available;
+  }
+  
+  /* Fix for iOS Safari 100vh issue */
+  #root {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Improve scrolling on iOS */
+.overflow-scroll, .overflow-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Fix for iOS input zoom */
+input, select, textarea {
+  font-size: 16px; /* Prevent zoom on focus in iOS */
+}
+

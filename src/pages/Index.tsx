@@ -5,6 +5,7 @@ import { Camera, List } from "lucide-react";
 import { Scanner } from "@/components/Scanner";
 import { BlacklistManager } from "@/components/BlacklistManager";
 import defaultBlacklist, { BlacklistedIngredients } from "@/data/blacklistedIngredients";
+import { Toaster } from "sonner";
 
 const Index = () => {
   const [blacklist, setBlacklist] = useState<BlacklistedIngredients>(defaultBlacklist);
@@ -29,7 +30,7 @@ const Index = () => {
   
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      <header className="bg-neuro-dark text-white py-4 px-6 shadow-lg">
+      <header className="bg-neuro-dark text-white py-4 px-6 shadow-lg safe-area-inset-top">
         <h1 className="text-xl font-bold">NeuroAware</h1>
       </header>
       
@@ -37,11 +38,11 @@ const Index = () => {
         <Tabs defaultValue="scanner" className="flex-1 flex flex-col">
           <div className="border-b">
             <TabsList className="w-full flex">
-              <TabsTrigger value="scanner" className="flex-1 py-3">
+              <TabsTrigger value="scanner" className="mobile-tab">
                 <Camera className="mr-2 h-4 w-4" />
                 Scanner
               </TabsTrigger>
-              <TabsTrigger value="blacklist" className="flex-1 py-3">
+              <TabsTrigger value="blacklist" className="mobile-tab">
                 <List className="mr-2 h-4 w-4" />
                 Blacklist
               </TabsTrigger>
@@ -52,7 +53,7 @@ const Index = () => {
             <Scanner blacklist={blacklist} />
           </TabsContent>
           
-          <TabsContent value="blacklist" className="flex-1 overflow-auto m-0 p-0">
+          <TabsContent value="blacklist" className="flex-1 overflow-auto m-0 p-0 -webkit-overflow-scrolling-touch">
             <BlacklistManager
               blacklist={blacklist}
               onUpdateBlacklist={handleUpdateBlacklist}
@@ -60,6 +61,8 @@ const Index = () => {
           </TabsContent>
         </Tabs>
       </main>
+      
+      <Toaster position="top-center" />
     </div>
   );
 };
